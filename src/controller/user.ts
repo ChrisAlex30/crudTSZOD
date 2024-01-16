@@ -2,14 +2,15 @@ import {Request,Response} from "express"
 import {UserModel} from "../models/user"
 import { userSchema } from "../middleware/validate";
 
+import { fromZodError } from 'zod-validation-error';
+import { ZodError } from "zod";
+
+
 const createUser=async(req:Request,res:Response)=>{
     try{
         const {name,email,gender}=req.body
 
-        if(!userSchema.safeParse(req.body).success){
-            res.status(401).send({msg:"Please fill required fields!!!"});
-            return;
-        }
+        userSchema.parse(req.body)
 
         const user=new UserModel(req.body)
 
@@ -17,6 +18,10 @@ const createUser=async(req:Request,res:Response)=>{
         res.status(201).json({ msg: "User Saved" });
     }
     catch(err){
+        if(err instanceof ZodError){
+            const validationError = fromZodError(err);
+            return res.status(500).json({ msg: validationError.toString() });
+        }
         console.log(err);
         res.status(500).json({ msg: "Server Error" });
     }
@@ -48,10 +53,7 @@ const readUserbyId=async(req:Request,res:Response)=>{
 
 const updateUser=async(req:Request,res:Response)=>{
     try{
-        if(!userSchema.safeParse(req.body).success){
-            res.status(401).send({msg:"Please fill required fields!!!"});
-            return;
-        }
+        userSchema.parse(req.body)
         const {name,email,gender}=req.body
         const {id}=req.params  
 
@@ -59,6 +61,10 @@ const updateUser=async(req:Request,res:Response)=>{
         res.status(201).json({ msg: "User Updated" });
     }
     catch(err){
+        if(err instanceof ZodError){
+            const validationError = fromZodError(err);
+            return res.status(500).json({ msg: validationError.toString() });
+        }
         console.log(err);
         res.status(500).json({ msg: "Server Error" });
     }
